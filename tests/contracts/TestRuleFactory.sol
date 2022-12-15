@@ -9,8 +9,8 @@ contract TestRuleFactory {
 
     using OpcodeRules for string;
 
-    TestCoin coin = new TestCoin();
-    address entryPoint;
+    TestCoin immutable coin = new TestCoin();
+    address immutable entryPoint;
 
     constructor(address _entryPoint) {
         entryPoint = _entryPoint;
@@ -18,7 +18,7 @@ contract TestRuleFactory {
 
     function create(uint nonce, string memory rule) public returns (IAccount) {
         require(OpcodeRules.runRule(rule, coin) != OpcodeRules.UNKNOWN, string.concat("factory unknown rule: ", rule));
-        TestRulesAccount ret = new TestRulesAccount{salt : bytes32(nonce)}(entryPoint);
+        TestRulesAccount ret = new TestRulesAccount{salt : bytes32(nonce)}(entryPoint, coin);
         require(address(ret) != address(0), "create failed");
         return ret;
     }

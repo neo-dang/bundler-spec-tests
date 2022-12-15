@@ -13,13 +13,12 @@ contract TestRulesAccount is IAccount {
 
     event State(uint oldState, uint newState);
 
-    constructor(address _ep) payable {
+    constructor(address _ep, TestCoin _coin) payable {
         if (_ep != address(0)) {
             (bool req,) = address(_ep).call{value : msg.value}("");
             require(req);
         }
-        //TODO: setCoin from constructor means we can't create this coin from initCode...
-        setCoin(new TestCoin());
+        setCoin(_coin);
     }
 
     function setState(uint _state) external {
