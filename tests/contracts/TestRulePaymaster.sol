@@ -9,11 +9,17 @@ contract TestRulePaymaster is IPaymaster {
 
     using OpcodeRules for string;
 
+    constructor(IEntryPoint ep) payable {
+        if (address(ep) != address(0)) {
+            ep.depositTo{value:msg.value}(address(this));
+        }
+    }
+
     TestCoin immutable coin = new TestCoin();
     uint something;
 
     function addStake(IEntryPoint ep, uint32 delay) public payable {
-        ep.addStake{value: msg.value}(delay);
+        ep.addStake{value : msg.value}(delay);
     }
 
     function validatePaymasterUserOp(UserOperation calldata userOp, bytes32, uint256)
@@ -21,7 +27,7 @@ contract TestRulePaymaster is IPaymaster {
 
         //first byte after paymaster address.
         string memory rule = string(userOp.paymasterAndData[20 :]);
-        if(rule.eq("self-storage")) {
+        if (rule.eq("self-storage")) {
             return ("", something);
         }
         if (rule.eq("expired")) {

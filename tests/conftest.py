@@ -12,9 +12,13 @@ from .utils import deploy_wallet_contract
 
 
 def pytest_configure(config):
+    ep = config.getoption("--entry-point")
+    url = config.getoption("--url")
+    #if not given on command-line, then read ep from bundler.
+    ep = ep or RPCRequest('eth_supportedEntryPoints').send(url).result[0]
     CommandLineArgs.configure(
-        url=config.getoption("--url"),
-        entryPoint=config.getoption("--entry-point"),
+        url=url,
+        entryPoint=ep,
         ethereumNode=config.getoption("--ethereum-node"),
         launcherScript=config.getoption("--launcher-script"),
     )
@@ -24,6 +28,7 @@ def pytest_configure(config):
 def pytest_sessionstart():
     if CommandLineArgs.launcherScript is not None:
         subprocess.run([CommandLineArgs.launcherScript, "start"], check=True, text=True)
+    print("sessionstart: bundler version=",RPCRequest("web3_clientVersion").send())
 
 
 def pytest_sessionfinish():

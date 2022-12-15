@@ -23,7 +23,7 @@ def compile_contract(contract):
         return compiled_sol["<stdin>:" + contract]
 
 
-def deploy_contract(w3, contractName, ctrParams=[], value=0, gas=1000000):
+def deploy_contract(w3, contractName, ctrParams=[], value=0, gas=10000000):
     interface = compile_contract(contractName)
     contract = w3.eth.contract(
         abi=interface["abi"], bytecode=interface["bin"]
@@ -33,6 +33,7 @@ def deploy_contract(w3, contractName, ctrParams=[], value=0, gas=1000000):
         {"gas": gas, "from": account, "value": hex(value)}
     )
     tx_receipt = w3.eth.wait_for_transaction_receipt(tx_hash)
+    assert tx_receipt.status, "deployment failed (gas?)"
     # print('Deployed contract. hash, receipt:', tx_hash.hex(), tx_receipt)
     # print(tx_receipt.contractAddress)
     return w3.eth.contract(

@@ -2,6 +2,7 @@ import re
 
 import pytest
 from web3 import constants
+import jsonrpcclient
 from tests.utils import deploy_contract, deploy_wallet_contract, UserOperation, RPCRequest, assertRpcError, \
     CommandLineArgs, get_contract
 from tests.types import RPCErrorCode
@@ -85,9 +86,12 @@ def two_wallets(w3):
 
 @pytest.mark.parametrize('rule', rules.keys())
 @pytest.mark.parametrize('entity', entityTypes)
-@pytest.mark.parametrize('isStake', [False, True])
-@pytest.mark.parametrize('isThrottled', [False, True])
-def test_stake_rule(entrypoint_contract, clearState, w3, entity, rule, isStake, isThrottled, two_wallets):
+@pytest.mark.parametrize('stake', ['noStake','stake', 'stakeThrottled'])
+def test_stake_rule(entrypoint_contract, clearState, w3, entity, rule, stake, two_wallets):
+    #keep code below using old flags, but use single string parameter..
+    isStake = stake != 'noStake'
+    isThrottled = stake == 'stakeThrottled'
+
     entryPoint = entrypoint_contract
 
     helper = deploy_contract(w3, 'Helper')
@@ -124,7 +128,7 @@ def test_stake_rule(entrypoint_contract, clearState, w3, entity, rule, isStake, 
         rule = re.sub('-(no)?init', '')
 
     if entity == 'paymaster':
-        ent = deploy_contract(w3, 'TestRulePaymaster')
+        ent = deploy_contract(w3, 'TestRulePaymaster', [entryPoint.address], value=10**18)
         paymasterAndData = ent.address + rule.encode().hex()
     elif entity == 'factory':
         ent = deploy_contract(w3, 'TestRuleFactory', [CommandLineArgs.entryPoint])
@@ -154,23 +158,30 @@ def test_stake_rule(entrypoint_contract, clearState, w3, entity, rule, isStake, 
 
     action = get_action(rule, isStake, isThrottled)
 
+    def send(**kw):
+        ret = UserOperation(**kw).send()
+        if isinstance(ret,jsonrpcclient.Ok):
+            return ret.result
+        raise Exception( 'code=%s %s'%(ret.code, ret.message) )
+
     print('action=', action)
     # action[0] is the action for 1st simuulation (rpc/p2p)
     # action[1] is the action for 2nd simulation (build bundle)
     if action[0] == 'ok':
         # should succeed
         for i in range(0, 2):
-            UserOperation(sender=senders[i], signature=sig,
-                          paymasterAndData=paymasterAndData,
-                          initCode=initCodes[i]).send().result
-    elif action[0] == 'drop':
-        UserOperation(sender=senders[0], signature=sig,
+            send(sender=senders[i], signature=sig,
                       paymasterAndData=paymasterAndData,
-                      initCode=initCodes[0]).send().result
-        err = UserOperation(sender=senders[0], signature=sig,
-                            paymasterAndData=paymasterAndData,
-                            initCode=initCodes[0]).send().error
-        assertRpcError(err, '', RPCErrorCode.BANNED_OR_THROTTLED_PAYMASTER)
+                      initCode=initCodes[i])
+    elif action[0] == 'drop':
+        send(sender=senders[0], signature=sig,
+                      paymasterAndData=paymasterAndData,
+                      initCode=initCodes[0])
+        with pytest.raises(Exception, match='asdasd'):
+            send(sender=senders[0], signature=sig,
+                                paymasterAndData=paymasterAndData,
+                                initCode=initCodes[0])
+        # assertRpcError(err, '', RPCErrorCode.BANNED_OR_THROTTLED_PAYMASTER)
     elif action[0] == '4':
         # special case for wallet: allow 4 entries in mempool (different nonces)
         for i in range(1, 5):
