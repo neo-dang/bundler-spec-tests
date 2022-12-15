@@ -4,6 +4,7 @@ pragma solidity ^0.8.15;
 import "@account-abstraction/contracts/interfaces/IPaymaster.sol";
 import "@account-abstraction/contracts/interfaces/IEntryPoint.sol";
 import "./OpcodeRules.sol";
+import "./TestRulesAccount.sol";
 
 contract TestRulePaymaster is IPaymaster {
 
@@ -11,7 +12,7 @@ contract TestRulePaymaster is IPaymaster {
 
     constructor(IEntryPoint ep) payable {
         if (address(ep) != address(0)) {
-            ep.depositTo{value:msg.value}(address(this));
+            ep.depositTo{value : msg.value}(address(this));
         }
     }
 
@@ -27,16 +28,19 @@ contract TestRulePaymaster is IPaymaster {
 
         //first byte after paymaster address.
         string memory rule = string(userOp.paymasterAndData[20 :]);
-        if (rule.eq("self-storage")) {
+        if (rule.eq('no_storage')) {
+            return ("", 0);
+        } else if (rule.eq('acct_ref')) {
+            return ("", TestRulesAccount(userOp.sender).state());
+        } else if (rule.eq("self-storage")) {
             return ("", something);
-        }
-        if (rule.eq("expired")) {
+        } else if (rule.eq("expired")) {
             return ("", 1);
-        }
-        if (rule.eq("context")) {
+        } else if (rule.eq("context")) {
             return ("this is a context", 0);
+        } else {
+            require(OpcodeRules.runRule(rule, coin) != OpcodeRules.UNKNOWN, string.concat("unknown rule: ", rule));
         }
-        require(OpcodeRules.runRule(rule, coin) != OpcodeRules.UNKNOWN, string.concat("unknown rule: ", rule));
         return ("", 0);
     }
 

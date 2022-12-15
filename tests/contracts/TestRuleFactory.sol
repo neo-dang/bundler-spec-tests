@@ -3,6 +3,7 @@ pragma solidity ^0.8.15;
 
 import "@account-abstraction/contracts/interfaces/IPaymaster.sol";
 import "./OpcodeRules.sol";
+import "./TestRulesAccount.sol";
 
 contract TestRuleFactory {
 

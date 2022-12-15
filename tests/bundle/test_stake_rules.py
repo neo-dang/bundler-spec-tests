@@ -99,11 +99,15 @@ def test_stake_rule(entrypoint_contract, clearState, w3, entity, rule, stake, tw
     def getSenderAddress(initCode):
         return helper.functions.getSenderAddress(entryPoint.address, initCode).call({'gas':10000000})
 
+    #extract "init/noinit" from rule into initStatus
+    # entireRule is entire string, used to index get_action
+    (entireRule, rule, initStatus) =  re.match(r'((.*?)(?:_((?:no)?init))?)$', rule).groups()
+
     # remove unsupported combinations
     if isThrottled and not isStake: return
     # the "init/noinit" rules are for all entities but factory
     # (they check other entity with/without factory
-    if rule.find('init') > 0 and entity == 'factory': return
+    if initStatus is not None and entity == 'factory': return
     # if rule == 'entSender' and entity != 'sender': return
     if rule == 'context' and entity != 'paymaster': return
 
@@ -117,15 +121,6 @@ def test_stake_rule(entrypoint_contract, clearState, w3, entity, rule, stake, tw
     paymasterAndData = '0x'
     ent = None
     sig = '0x'
-    # testing (sender, paymaster) but with initCode
-    if rule.find('-init') > 0:
-        factory = deploy_contract('TestFactory')
-        initCodes = [
-            ent.address + factory.functions.create(1,'').build_transaction()['data'],
-            ent.address + factory.functions.create(2, '').build_transaction()['data']
-        ]
-        # remove the init/noinit marker from the rule
-        rule = re.sub('-(no)?init', '')
 
     if entity == 'paymaster':
         ent = deploy_contract(w3, 'TestRulePaymaster', [entryPoint.address], value=10**18)
@@ -144,6 +139,14 @@ def test_stake_rule(entrypoint_contract, clearState, w3, entity, rule, stake, tw
         raise Exception("unknown entity", entity)
         # paymaster = deploy_contract('TestRulePaymaster')
 
+    # testing (sender, paymaster) but with initCode
+    if initStatus == 'init':
+        factory = deploy_contract(w3, 'TestRuleFactory', [entryPoint.address])
+        initCodes = [
+            ent.address + factory.functions.create(1,'').build_transaction()['data'],
+            ent.address + factory.functions.create(2, '').build_transaction()['data']
+        ]
+
     if isStake:
         ent.addStake(entryPoint, 1)
         if isThrottled:
@@ -156,7 +159,7 @@ def test_stake_rule(entrypoint_contract, clearState, w3, entity, rule, stake, tw
             getSenderAddress(initCodes[1]),
         ]
 
-    action = get_action(rule, isStake, isThrottled)
+    action = get_action(entireRule, isStake, isThrottled)
 
     def send(**kw):
         ret = UserOperation(**kw).send()
