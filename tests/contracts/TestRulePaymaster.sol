@@ -31,9 +31,13 @@ contract TestRulePaymaster is IPaymaster {
         if (rule.eq('no_storage')) {
             return ("", 0);
         } else if (rule.eq('acct_ref')) {
+            return ("", coin.balanceOf(userOp.sender));
+        } else if (rule.eq('acct_storage')) {
             return ("", TestRulesAccount(userOp.sender).state());
-        } else if (rule.eq("self-storage")) {
+        } else if (rule.eq("ent_storage")) {
             return ("", something);
+        } else if (rule.eq("ent_ref")) {
+            return ("", coin.balanceOf(address (this)));
         } else if (rule.eq("expired")) {
             return ("", 1);
         } else if (rule.eq("context")) {
