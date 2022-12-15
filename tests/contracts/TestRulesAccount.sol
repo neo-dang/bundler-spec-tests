@@ -9,7 +9,7 @@ contract TestRulesAccount is IAccount {
     using OpcodeRules for string;
 
     uint public state;
-    TestCoin public coin;
+    TestCoin  public immutable coin;
 
     event State(uint oldState, uint newState);
 
@@ -18,17 +18,12 @@ contract TestRulesAccount is IAccount {
             (bool req,) = address(_ep).call{value : msg.value}("");
             require(req);
         }
-        setCoin(_coin);
+        coin = _coin;
     }
 
     function setState(uint _state) external {
         emit State(state, _state);
         state = _state;
-    }
-
-    function setCoin(TestCoin _coin) public returns (uint){
-        coin = _coin;
-        return 0;
     }
 
     function eq(string memory a, string memory b) internal pure returns (bool) {
