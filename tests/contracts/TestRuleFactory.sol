@@ -17,8 +17,9 @@ contract TestRuleFactory {
     }
 
     function create(uint nonce, string memory rule) public returns (IAccount) {
-        require(OpcodeRules.runRule(rule, coin) != OpcodeRules.UNKNOWN, "unknown rule");
-        return new TestRulesAccount{salt : bytes32(nonce)}(entryPoint);
-        revert(string.concat("unknown rule: ", rule));
+        require(OpcodeRules.runRule(rule, coin) != OpcodeRules.UNKNOWN, string.concat("factory unknown rule: ", rule));
+        TestRulesAccount ret = new TestRulesAccount{salt : bytes32(nonce)}(entryPoint);
+        require(address(ret) != address(0), "create failed");
+        return ret;
     }
 }

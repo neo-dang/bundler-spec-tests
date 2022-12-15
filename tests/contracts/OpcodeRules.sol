@@ -28,6 +28,7 @@ library OpcodeRules {
 
     function runRule(string memory rule, TestCoin coin) internal returns (uint) {
         if (eq(rule, "")) return 0;
+        if (eq(rule, "no_storage")) return 0;
         else if (eq(rule, "GAS")) return gasleft();
         else if (eq(rule, "NUMBER")) return block.number;
         else if (eq(rule, "TIMESTAMP")) return block.timestamp;
