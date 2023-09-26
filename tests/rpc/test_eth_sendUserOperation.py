@@ -21,6 +21,17 @@ def test_eth_sendUserOperation(wallet_contract, helper_contract, userop, schema)
     Validator.check_schema(schema)
     validate(instance=response.result, schema=schema)
 
+@pytest.mark.parametrize("schema_method", ["eth_sendUserOperation"], ids=[""])
+def test_eth_sendUserOperation_bundleGasPrice(wallet_contract, helper_contract, userop_bundleGasPrice, schema):
+    state_before = wallet_contract.functions.state().call()
+    assert state_before == 0
+    response = userop_bundleGasPrice.send()
+    send_bundle_now()
+    state_after = wallet_contract.functions.state().call()
+    assert response.result == userop_hash(helper_contract, userop_bundleGasPrice)
+    assert state_after == 1111111
+    Validator.check_schema(schema)
+    validate(instance=response.result, schema=schema)
 
 def test_eth_sendUserOperation_revert(wallet_contract, bad_sig_userop):
     state_before = wallet_contract.functions.state().call()
