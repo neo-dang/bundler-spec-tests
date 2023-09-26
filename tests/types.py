@@ -9,6 +9,7 @@ import requests
 from eth_typing import (
     HexStr,
 )
+from typing import Optional
 
 
 @dataclass()
@@ -43,6 +44,8 @@ class UserOperation:
     maxPriorityFeePerGas: HexStr = hex(1 * 10**9)
     paymasterAndData: HexStr = "0x"
     signature: HexStr = "0x"
+    bundleGasPrice: Optional[int] = None
+
 
     def send(self, entrypoint=None, url=None):
         if entrypoint is None:

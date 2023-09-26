@@ -100,6 +100,15 @@ def userop(wallet_contract):
         signature="0xface",
     )
 
+@pytest.fixture
+def userop_bundleGasPrice(wallet_contract):
+    return UserOperation(
+        sender=wallet_contract.address,
+        callData=wallet_contract.encodeABI(fn_name="setState", args=[1111111]),
+        signature="0xface",
+        bundleGasPrice=hex(3 * 10**9)
+    )
+
 
 @pytest.fixture
 def execute_user_operation(userop):
